@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1.7
+FROM dev-env
+
+# An example Dockerfile for an extension to dev-env
+
+USER dev
+WORKDIR /workspace
+
+# --- Public dependencies ---
+RUN set -eux; \
+    for repo in a-cmake-library the-macro-library a-memory-library; do \
+        git clone --depth 1 "https://github.com/knode-ai-open-source/${repo}.git" "$repo"; \
+        (cd "$repo" && ./build_install.sh); \
+        rm -rf "$repo"; \
+    done
+
+# --- OPTIONAL: uncomment for future private repos ---
+# RUN --mount=type=secret,id=gh,uid=1000,gid=1000,mode=0400,required \
+#     set -eux; GHTOKEN="$(cat /run/secrets/gh)"; \
+#     for repo in some-private-repo another-private-repo; do \
+#         git clone "https://${GHTOKEN}@github.com/knode-ai-open-source/${repo}.git" "$repo"; \
+#         (cd "$repo" && ./build_install.sh); \
+#         rm -rf "$repo"; \
+#     done
+
+COPY --chown=dev:dev . /workspace/project
+RUN cd /workspace/project && ./build_install.sh
+
+CMD ["/bin/bash"]
